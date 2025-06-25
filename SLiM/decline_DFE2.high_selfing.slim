@@ -1,0 +1,88 @@
+// set up a simple neutral simulation
+initialize() {
+
+	initializeTreeSeq(recordMutations=T, simplificationInterval=500);
+	
+	initializeMutationRate(7.5e-9);
+	
+	// m0 mutation type: neutral
+	initializeMutationType("m0", 0.5, "f", 0.0);
+	
+	// m1 mutation type: gamma distributed
+	initializeMutationType("m1", 0.5, "g", -0.01, 0.333);
+	
+	// g1 genomic element type: deleterious mutations
+	initializeGenomicElementType("g1", m1, 1.0);
+	
+	// read in exons
+	map = readCSV("Caprub.chromosome1.exons.bed", 
+		colNames=T, sep="\t");
+	starts = asInteger(map.getValue("start"));
+	ends = asInteger(map.getValue("end")) - 1;
+
+	map = readCSV("Caprub.chromosome2.exons.bed", 
+		colNames=T, sep="\t");
+	starts = c(starts, asInteger(map.getValue("start")) + 19570000);
+	ends = c(ends, asInteger(map.getValue("end")) - 1 + 19570000);
+
+	map = readCSV("Caprub.chromosome3.exons.bed", 
+		colNames=T, sep="\t");
+	starts = c(starts, asInteger(map.getValue("start")) + 33640000);
+	ends = c(ends, asInteger(map.getValue("end")) - 1 + 33640000);
+
+	initializeGenomicElement(g1, starts, ends);
+
+
+	// read in maps	
+	map = readCSV("Capsella_rubella_Slotte2013_chromosome1.txt", 
+		colNames=T, sep="\t");
+	ends = asInteger(asFloat(map.getValue("phys")) * 1e6);
+	ends = c(ends, ends[size(ends)-1] + 1);
+	rates = asFloat(map.getValue("rec")) * 1e-8;
+	rates = c(rates, 0.5);
+
+	map = readCSV("Capsella_rubella_Slotte2013_chromosome2.txt", 
+		colNames=T, sep="\t");
+	ends = c(ends, asInteger((asFloat(map.getValue("phys")) + 19.57) * 1e6));
+	ends = c(ends, ends[size(ends)-1] + 1);
+	rates = c(rates, asFloat(map.getValue("rec")) * 1e-8);
+	rates = c(rates, 0.5);
+
+	map = readCSV("Capsella_rubella_Slotte2013_chromosome3.txt", 
+		colNames=T, sep="\t");
+	ends = c(ends, asInteger((asFloat(map.getValue("phys")) + 33.64) * 1e6));
+	ends = c(ends, ends[size(ends)-1] + 1);
+	rates = c(rates, asFloat(map.getValue("rec")) * 1e-8);
+	rates = c(rates, 0.5);
+
+	initializeRecombinationRate(rates, ends);
+	
+}
+
+// create a population of N diploid individuals
+1 early() {
+	sim.addSubpop("p1", pop_size * 5);
+	p1.setSelfingRate(0.9);
+}
+
+gens - pop_size early() { p1.setSubpopulationSize(pop_size); }
+
+late() {
+        if (sim.cycle == gens - pop_size)
+        {
+                defineConstant("f0", length(sim.substitutions));
+	}
+        if (sim.cycle == gens)
+	{
+                defineConstant("f1", length(sim.substitutions));
+                defineConstant("subs", f1 - f0);
+	}
+}
+		
+gens late() {
+        sim.treeSeqOutput(paste0(c("./SLiM.decline_DFE2.high_selfing.bb.", r_seed, ".trees")));
+        w = asFloat(sim.subpopulations.individuals.countOfMutationsOfType(m1));
+        writeFile(paste0(c("./SLiM.decline_DFE2.high_selfing.bb.", r_seed, ".mut_log")), mean(w) + ", " + var(w) + "\n" + subs);
+        writeFile(paste0(c("./SLiM.decline_DFE2.high_selfing.bb.", r_seed, ".mut_log")), paste(w, sep=", "), append=T);
+}
+

@@ -109,7 +109,7 @@ The table below shows run times for different models when fit to data from _Caps
 | Neutral 1-epoch     | 1          | 3.9 milliseconds |
 | Neutral 2-epoch     | 4          | 1.5 seconds      |
 | Neutral 3-epoch     | 6          | 3.2 minutes      |
-| Classic-BGS         | 5          | 55 minutes       |
+| Classic-BGS         | 4          | 55 minutes       |
 | BGS-with-demography | 8          |                  |
 
 There is still room for improving the performance of the code and so future versions should have better run time.

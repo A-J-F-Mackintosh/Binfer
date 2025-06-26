@@ -13,7 +13,7 @@ Usage: Binfer_prep.py -v <STR> -b <STR> -g <STR> -d <INT> -D <INT> -w <INT> (-1 
   [Options]
     -v, --vcf <STR>                             VCF file
     -b, --bed <STR>                             Bed file of callable sites
-    -g, --genomefile <STR>                      A genome with the lengths of chromosomes to sample
+    -g, --genomefile <STR>                      A genomefile with the lengths of chromosomes to sample (see bedtools docs)
     -1, --taxon_1_samples <STR>                 A range of 1-based indices for samples in the #CHROM line, e.g. 1-16
     -o, --taxon_1_samples_alt <STR>             Indicies for samples, e.g. 1,4,6,7,8
     -2, --taxon_2_samples <STR>                 A range of 1-based indices for samples in the #CHROM line, e.g. 17-56
@@ -28,13 +28,13 @@ Where an example command would look like:
 
 `./Binfer_prep.py -v corientalis_grandiflora.SNPS.callable.vcf -b corientalis_grandiflora.callable.bed -g genomefile.txt -1 1-16 -2 17-66 -d 20 -D 20 -w 10_000 > Binfer_prep.log`
 
-Note that the vcf file must already be filtered on callable intervals. In other words, the vcf should only include SNPs were there is good sequencing coverage across samples.
+Note that the vcf file must already be filtered on callable intervals.
 
-The above command generates arrays of unfolded spectra for taxon_1 and taxon_2. If taxon_2 is an outgroup that will not be analysed then the output for this taxon can be ignored.
+The above command generates arrays of unfolded site frequency spectra along the genome for taxon_1 and taxon_2. Note that taxon_2 could just be a single outgroup sample to polarise alleles in taxon_1, or it could be a sample of interest as above.
 
 #### Fitting models
 
-BGS models can be fit with `Binfer.v1.py`.
+BGS models can be fit with `Binfer.v1/Binfer.py`.
 
 ```
 Usage: Binfer.py -s <STR> -b <STR> -g <STR> -r <STR> -p <INT> -n <INT> -w <INT> -m <FLT> [-h -f -u -a -y <FLT> -q <INT>]
@@ -58,7 +58,7 @@ Usage: Binfer.py -s <STR> -b <STR> -g <STR> -r <STR> -p <INT> -n <INT> -w <INT> 
 
 Where an example command would look like:
 
-`./Binfer.v1/Binfer.v1.py -s grandiflora_full_array.txt -b corientalis_grandiflora.CDS.bed -g genomefile.txt -r rmap_files.txt -p 2 -n 10 -w 10_000 -m 7e-9 -a -q 2`
+`./Binfer.v1/Binfer.py -s grandiflora_full_array.txt -b corientalis_grandiflora.CDS.bed -g genomefile.txt -r rmap_files.txt -p 2 -n 10 -w 10_000 -m 7e-9 -a -q 2`
 
 The one non-standard file type in the input is `rmap_files.txt`. This is text file with a list of file names, each corresponding to a recombination map. For example:
 
@@ -89,7 +89,7 @@ Classic-BGS (1-epoch)
 BGS-with-demography (3-epoch)
 ```
 
-If `Binfer.v1.py` is called with `-f` then the following models are fit sequentially:
+If `Binfer.v1.py` is called with `-f` then the following models are fit:
 
 ```
 1-epoch neutral

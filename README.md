@@ -1,5 +1,5 @@
 # Binfer
-Scripts and example data for fitting models of background selection with demography and partial-selfing
+Code and example data for fitting models of background selection with demography and partial-selfing
 
 ### Usage
 
@@ -93,9 +93,23 @@ If `Binfer.v1.py` is called with `-f` then the following models are fit:
 
 ```
 1-epoch neutral
-2-epoch neutral
+2-epoch neutral with partial selfing
 Classic-BGS (1-epoch)
 BGS-with-demography and partial-selfing (1-epoch)
 ```
 
+#### Run time
 
+Fitting BGS models to windowed SFS along the genome requires considerable computation. This is mainly because a single likelihood calculation requires calculating thousands of expected SFS. There is also no easy way to obtain the gradient of the likelihood function and derivative-free optimisation typically involves hundreds or even thousands of function evaluations.
+
+The table below shows run times for different models when fit to data from _Capsella grandiflora_. The data is for 10 diploids and 12,462 genomic windows. Computations were parallelised across 16 CPUs (where possible).
+
+| Model               | Parameters | Time             |
+|---------------------|------------|------------------|
+| Neutral 1-epoch     | 1          | 3.9 milliseconds |
+| Neutral 2-epoch     | 4          | 1.5 seconds      |
+| Neutral 3-epoch     | 6          | 3.2 minutes      |
+| Classic-BGS         | 5          | 55 minutes       |
+| BGS-with-demography | 8          |                  |
+
+There is still room for improving the performance of the code and so future versions should have better run time.

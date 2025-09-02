@@ -301,8 +301,8 @@ if __name__ == '__main__':
 	r_distance_array = np.array([np.array([(1 - math.exp(-2*abs(window_pos - mid))) / 2 for mid in r_windows_mid]) \
 		for window_pos in r_windows_mid])
 
-	for r in r_map:
-		print(r)
+	# for r in r_map:
+	# 	print(r)
 	
 
 	print("[+] Optimising 1N pi model...", flush=True)

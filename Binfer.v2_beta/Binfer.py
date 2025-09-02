@@ -817,7 +817,6 @@ if __name__ == '__main__':
 
 		F = alpha / (2 - alpha)
 		# use F to get some better initial guesses
-		u_estimate = u_estimate / (1 + F)
 		s_mean_estimate = s_mean_estimate / (1 + F)
 		alpha_estimate = alpha
 

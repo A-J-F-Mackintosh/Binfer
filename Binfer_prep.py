@@ -3,7 +3,7 @@
 
 """
 
-Usage: Binfer_prep.py -v <STR> -b <STR> -g <STR> -d <INT> -D <INT> -w <INT> (-1 <STR> | -o STR>) (-2 <STR> | -t <STR) [-h]
+Usage: Binfer_prep.py -v <STR> -b <STR> -g <STR> -d <INT> -D <INT> -w <INT> (-1 <STR> | -o STR>) (-2 <STR> | -t <STR) [-h -a <INT>]
 
   [Options]
     -v, --vcf <STR>                             VCF file
@@ -13,8 +13,9 @@ Usage: Binfer_prep.py -v <STR> -b <STR> -g <STR> -d <INT> -D <INT> -w <INT> (-1 
     -o, --taxon_1_samples_alt <STR>             Indicies for samples, e.g. 1,4,6,7,8
     -2, --taxon_2_samples <STR>                 A range of 1-based indices for samples in the #CHROM line, e.g. 17-56
     -t, --taxon_2_samples_alt <STR>             Indicies for samples, e.g. 1,4,6,7,8
-    -d, --downsample1 <INT>                    How many haploid genomes to downsample the SFS to (must be even)
-    -D, --downsample2 <INT>                    How many haploid genomes to downsample the SFS to (must be even)
+    -d, --downsample1 <INT>                     How many haploid genomes to downsample the SFS to (must be even)
+    -D, --downsample2 <INT>                     How many haploid genomes to downsample the SFS to (must be even)
+    -a, --use_ancestral_allele <INT>            Instead of using an outgroup, use ancestral allele field on VCF. If True, args for taxon_2 are ignored. [default: 0]
     -w, --window_size <INT>                     Number of bases in a window
     -h, --help                                  Show this message
 
@@ -74,8 +75,10 @@ if __name__ == '__main__':
 	vcf_f = args["--vcf"]
 	bed_f = args["--bed"]
 	genome_f = args["--genomefile"]
+	UAA = int(args["--use_ancestral_allele"])
 	taxon_1_samples = args["--taxon_1_samples"]
-	taxon_2_samples = args["--taxon_2_samples"]
+	if UAA == 0:
+		taxon_2_samples = args["--taxon_2_samples"]
 
 	if args["--taxon_1_samples_alt"]:
 		sample_idxs = args["--taxon_1_samples_alt"].split(",")
@@ -83,14 +86,17 @@ if __name__ == '__main__':
 	else:
 		taxon_1_sample_idxs = [int(i) for i in range(int(taxon_1_samples.split("-")[0]), int(taxon_1_samples.split("-")[1])+1)]
 
-	if args["--taxon_2_samples_alt"]:
-		sample_idxs = args["--taxon_2_samples_alt"].split(",")
-		taxon_2_sample_idxs = [int(i) for i in sample_idxs]
-	else:
-		taxon_2_sample_idxs = [int(i) for i in range(int(taxon_2_samples.split("-")[0]), int(taxon_2_samples.split("-")[1])+1)]
+	if UAA == 0:
+		if args["--taxon_2_samples_alt"]:
+			sample_idxs = args["--taxon_2_samples_alt"].split(",")
+			taxon_2_sample_idxs = [int(i) for i in sample_idxs]
+		else:
+			taxon_2_sample_idxs = [int(i) for i in range(int(taxon_2_samples.split("-")[0]), int(taxon_2_samples.split("-")[1])+1)]
 
 	downsample_1 = int(args["--downsample1"])
-	downsample_2 = int(args["--downsample2"])
+	if UAA == 0:
+		downsample_2 = int(args["--downsample2"])
+
 	window_size = int(args["--window_size"])
 
 	target_sequences = []
@@ -108,7 +114,8 @@ if __name__ == '__main__':
 			windows += target_windows
 
 	taxon_1_array = np.zeros((windows, downsample_1), dtype=float)
-	taxon_2_array = np.zeros((windows, downsample_2), dtype=float)
+	if UAA == 0:
+		taxon_2_array = np.zeros((windows, downsample_2), dtype=float)
 
 	print("[=] Read {} sequences and made {} windows".format(len(target_sequences), windows))
 
@@ -131,7 +138,8 @@ if __name__ == '__main__':
 
 				contrib_to_window = min(((window_idx + 1) * window_size), end) - start
 				taxon_1_array[window_idx][0] += contrib_to_window
-				taxon_2_array[window_idx][0] += contrib_to_window
+				if UAA == 0:
+					taxon_2_array[window_idx][0] += contrib_to_window
 
 				if end > ((window_idx + 1) * window_size):
 					looking_for_end = True
@@ -141,11 +149,13 @@ if __name__ == '__main__':
 						if end <= ((window_idx + 1) * window_size):
 							contrib_to_window = end - (window_idx * window_size) 
 							taxon_1_array[window_idx][0] += contrib_to_window
-							taxon_2_array[window_idx][0] += contrib_to_window
+							if UAA == 0:
+								taxon_2_array[window_idx][0] += contrib_to_window
 							looking_for_end = False
 						else:
 							taxon_1_array[window_idx][0] += window_size
-							taxon_2_array[window_idx][0] += window_size
+							if UAA == 0:
+								taxon_2_array[window_idx][0] += window_size
 
 	# think this is correct but need to test carefully with print statements
 
@@ -173,29 +183,151 @@ if __name__ == '__main__':
 
 					# collect genotypes
 
-					for i in range(9, len(line_list)):
-							genotype = line_list[i].split(":")[0].replace('|', '/')
-							if genotype == "./." or genotype == ".":
-								pass
+					if UAA == 0:
+
+						for i in range(9, len(line_list)):
+								genotype = line_list[i].split(":")[0].replace('|', '/')
+								if genotype == "./." or genotype == ".":
+									pass
+								else:
+									if i-8 in taxon_1_sample_idxs:
+										alleles_taxon_1 += genotype.split("/")
+										genotypes_taxon_1.append(genotype)
+									elif i-8 in taxon_2_sample_idxs:
+										alleles_taxon_2 += genotype.split("/")
+										genotypes_taxon_2.append(genotype)
+
+						if len(alleles_taxon_1) >= downsample_1 and len(alleles_taxon_2) >= downsample_2: # enough genomes?
+
+							if len(set(alleles_taxon_1)) + len(set(alleles_taxon_2)) == 3 and \
+							len(set(alleles_taxon_1).intersection(set(alleles_taxon_2))) == 1: # check if biallelic and polarisable
+
+								if len(set(alleles_taxon_1)) == 2: ## taxon2 is outgroup
+
+									#print(genotypes_taxon_1)
+
+									derived_allele = list(set(alleles_taxon_1) - set(alleles_taxon_2))[0]
+									ancestral_allele = list(set(alleles_taxon_1) & set(alleles_taxon_2))[0]
+
+									#print(derived_allele)
+									#print(ancestral_allele)
+
+									hom_derived_genotype = derived_allele + "/" + derived_allele
+									hom_ancestral_genotype = ancestral_allele + "/" + ancestral_allele
+
+									#print(hom_derived_genotype)
+									#print(hom_ancestral_genotype)
+
+									hom_derived_genotype_count = genotypes_taxon_1.count(hom_derived_genotype)
+									hom_ancestral_genotype_count = genotypes_taxon_1.count(hom_ancestral_genotype)
+									het_derived_genotype_count = len(genotypes_taxon_1) - hom_derived_genotype_count - hom_ancestral_genotype_count
+
+									#print(hom_derived_genotype_count)
+									#print(het_derived_genotype_count)
+
+									N = len(genotypes_taxon_1)
+									n = downsample_1 // 2
+
+									#print(N, n)
+
+									# how many homozygotes
+
+									for k1 in range(0, min(n+1, hom_derived_genotype_count+1)):
+
+										for k2 in range(0, min(n+1-k1, het_derived_genotype_count+1)):
+
+
+											k3 = n - k1 - k2
+											k = k1*2 + k2
+											if k == n*2:
+												k = 0
+
+											taxon_1_array[idx][k] += multivariate_hypergeometric_dist(N, n, hom_derived_genotype_count, k1, het_derived_genotype_count, k2, hom_ancestral_genotype_count, k3)
+
+									taxon_1_array[idx][0] += -1
+
+
+								else:
+
+									derived_allele = list(set(alleles_taxon_2) - set(alleles_taxon_1))[0]
+									ancestral_allele = list(set(alleles_taxon_2) & set(alleles_taxon_1))[0]
+
+									hom_derived_genotype = derived_allele + "/" + derived_allele
+									hom_ancestral_genotype = ancestral_allele + "/" + ancestral_allele
+
+									hom_derived_genotype_count = genotypes_taxon_2.count(hom_derived_genotype)
+									hom_ancestral_genotype_count = genotypes_taxon_2.count(hom_ancestral_genotype)
+									het_derived_genotype_count = len(genotypes_taxon_2) - hom_derived_genotype_count - hom_ancestral_genotype_count
+
+									N = len(genotypes_taxon_2)
+									n = downsample_2 // 2
+
+									# how many homozygotes
+									for k1 in range(0, min(n+1, hom_derived_genotype_count+1)):
+
+										for k2 in range(0, min(n+1-k1, het_derived_genotype_count+1)):
+
+											k3 = n - k1 - k2
+											k = k1*2 + k2
+											if k == n*2:
+												k = 0
+
+											taxon_2_array[idx][k] += multivariate_hypergeometric_dist(N, n, hom_derived_genotype_count, k1, het_derived_genotype_count, k2, hom_ancestral_genotype_count, k3)
+
+									taxon_2_array[idx][0] += -1
+
 							else:
-								if i-8 in taxon_1_sample_idxs:
-									alleles_taxon_1 += genotype.split("/")
-									genotypes_taxon_1.append(genotype)
-								elif i-8 in taxon_2_sample_idxs:
-									alleles_taxon_2 += genotype.split("/")
-									genotypes_taxon_2.append(genotype)
 
-					if len(alleles_taxon_1) >= downsample_1 and len(alleles_taxon_2) >= downsample_2: # enough genomes?
+								taxon_1_array[idx][0] += -1
+								taxon_2_array[idx][0] += -1
 
-						if len(set(alleles_taxon_1)) + len(set(alleles_taxon_2)) == 3 and \
-						len(set(alleles_taxon_1).intersection(set(alleles_taxon_2))) == 1: # check if biallelic and polarisable
+						else:
 
-							if len(set(alleles_taxon_1)) == 2: ## taxon2 is outgroup
+							taxon_1_array[idx][0] += -1
+							taxon_2_array[idx][0] += -1
+
+					if UAA == 1:
+
+						for i in range(9, len(line_list)):
+								genotype = line_list[i].split(":")[0].replace('|', '/')
+								if genotype == "./." or genotype == ".":
+									pass
+								else:
+									if i-8 in taxon_1_sample_idxs:
+										alleles_taxon_1 += genotype.split("/")
+										genotypes_taxon_1.append(genotype)
+
+						#print(alleles_taxon_1)
+						#print(genotypes_taxon_1)
+
+
+						if len(alleles_taxon_1) >= downsample_1: # enough genomes?
+
+							if len(set(alleles_taxon_1)) == 2: # check if biallelic
 
 								#print(genotypes_taxon_1)
 
-								derived_allele = list(set(alleles_taxon_1) - set(alleles_taxon_2))[0]
-								ancestral_allele = list(set(alleles_taxon_1) & set(alleles_taxon_2))[0]
+								ref_base = line_list[3]
+								alt_base = line_list[4]
+								ancestral_base = line_list[7].split(";")[0].split("=")[1]
+
+								#print(ref_base, alt_base, ancestral_base)
+
+								if ref_base == ancestral_base:
+									ancestral_allele = "0"
+									derived_allele = str(list(set(alleles_taxon_1) ^ set(["0"]))[0])
+								else:
+									if len(alt_base).split(",") == 1:
+										derived_allele = "0"
+										ancestral_allele = str(list(set(alleles_taxon_1) ^ set(["0"]))[0])
+									else:
+										for i, base in enumerate(len(alt_base).split(",")):
+											if base == ancestral_base:
+												ancestral_allele = str(i)
+												derived_allele = str(list(set(alleles_taxon_1) ^ set([str(i)]))[0])
+
+
+								#print(ancestral_allele, derived_allele)
 
 								#print(derived_allele)
 								#print(ancestral_allele)
@@ -209,6 +341,10 @@ if __name__ == '__main__':
 								hom_derived_genotype_count = genotypes_taxon_1.count(hom_derived_genotype)
 								hom_ancestral_genotype_count = genotypes_taxon_1.count(hom_ancestral_genotype)
 								het_derived_genotype_count = len(genotypes_taxon_1) - hom_derived_genotype_count - hom_ancestral_genotype_count
+
+								#print(hom_ancestral_genotype_count)
+								#print(hom_derived_genotype_count)
+								#print(het_derived_genotype_count)
 
 								#print(hom_derived_genotype_count)
 								#print(het_derived_genotype_count)
@@ -234,64 +370,39 @@ if __name__ == '__main__':
 
 								taxon_1_array[idx][0] += -1
 
-
 							else:
 
-								derived_allele = list(set(alleles_taxon_2) - set(alleles_taxon_1))[0]
-								ancestral_allele = list(set(alleles_taxon_2) & set(alleles_taxon_1))[0]
-
-								hom_derived_genotype = derived_allele + "/" + derived_allele
-								hom_ancestral_genotype = ancestral_allele + "/" + ancestral_allele
-
-								hom_derived_genotype_count = genotypes_taxon_2.count(hom_derived_genotype)
-								hom_ancestral_genotype_count = genotypes_taxon_2.count(hom_ancestral_genotype)
-								het_derived_genotype_count = len(genotypes_taxon_2) - hom_derived_genotype_count - hom_ancestral_genotype_count
-
-								N = len(genotypes_taxon_2)
-								n = downsample_2 // 2
-
-								# how many homozygotes
-								for k1 in range(0, min(n+1, hom_derived_genotype_count+1)):
-
-									for k2 in range(0, min(n+1-k1, het_derived_genotype_count+1)):
-
-										k3 = n - k1 - k2
-										k = k1*2 + k2
-										if k == n*2:
-											k = 0
-
-										taxon_2_array[idx][k] += multivariate_hypergeometric_dist(N, n, hom_derived_genotype_count, k1, het_derived_genotype_count, k2, hom_ancestral_genotype_count, k3)
-
-								taxon_2_array[idx][0] += -1
+								taxon_1_array[idx][0] += -1
 
 						else:
 
 							taxon_1_array[idx][0] += -1
-							taxon_2_array[idx][0] += -1
 
-					else:
 
-						taxon_1_array[idx][0] += -1
-						taxon_2_array[idx][0] += -1
 
 
 	print("[=] Read SNPs")
 
 	taxon_1_sfs = np.sum(taxon_1_array, axis=0)
-	taxon_2_sfs = np.sum(taxon_2_array, axis=0)
+	if UAA == 0:
+		taxon_2_sfs = np.sum(taxon_2_array, axis=0)
 
 	taxon_1_pi_estimate = SFS_to_pi(taxon_1_sfs, downsample_1)
-	taxon_2_pi_estimate = SFS_to_pi(taxon_2_sfs, downsample_2)
+	if UAA == 0:
+		taxon_2_pi_estimate = SFS_to_pi(taxon_2_sfs, downsample_2)
 
 	print("[=] Nucleotide diversity for taxon 1 : {}".format(taxon_1_pi_estimate))
-	print("[=] Nucleotide diversity for taxon 2 : {}".format(taxon_2_pi_estimate))
+	if UAA == 0:
+		print("[=] Nucleotide diversity for taxon 2 : {}".format(taxon_2_pi_estimate))
 	
 
 	np.savetxt("taxon_1_full_array.txt", taxon_1_array, delimiter=',')
-	np.savetxt("taxon_2_full_array.txt", taxon_2_array, delimiter=',')
+	if UAA == 0:
+		np.savetxt("taxon_2_full_array.txt", taxon_2_array, delimiter=',')
 
 	np.savetxt("taxon_1_sfs_array.txt", taxon_1_sfs, delimiter=',')
-	np.savetxt("taxon_2_sfs_array.txt", taxon_2_sfs, delimiter=',')
+	if UAA == 0:
+		np.savetxt("taxon_2_sfs_array.txt", taxon_2_sfs, delimiter=',')
 
 	print("[=] Spectra written to file. Finished.")
 

@@ -687,7 +687,7 @@ if __name__ == '__main__':
 		print("[+]---------------------------------------------------------")
 
 		distribution_init = np.array(["e", "e"])
-		mean_init = np.array([max(0.01, (min_mean_s * 1.1)) / 2, 2])
+		mean_init = np.array([max(0.01, (min_mean_s * 1.1)), 2])
 		#print(mean_init)
 		sd_init = np.array([1, 1]) # 1 is just a placeholder for exp and uniform distributions
 
@@ -756,7 +756,7 @@ if __name__ == '__main__':
 		
 
 		distribution_init = np.array(["u", "e", "e"])
-		mean_init = np.array([1e-8, max(0.01, (min_mean_s * 1.1)) / 2, 2])
+		mean_init = np.array([1e-8, max(0.01, (min_mean_s * 1.1)), 2])
 		sd_init = np.array([1, 1, 1]) # 1 is just a placeholder for exp and uniform distributions
 
 		while m_tracker <= m_thresh:
@@ -820,7 +820,7 @@ if __name__ == '__main__':
 
 		F = alpha / (2 - alpha)
 		# use F to get some better initial guesses
-		s_mean_estimate = s_mean_estimate / (1 + F)
+		#s_mean_estimate = s_mean_estimate / (1 + F)
 		alpha_estimate = alpha
 
 		print("[=] Conditioning on alpha = {}".format(alpha_estimate))
@@ -849,7 +849,7 @@ if __name__ == '__main__':
 			lower_boundaries = [min_mean_s, 0.1]
 
 			distribution_init = np.array(["lu", "lu"])
-			mean_init = np.array([min_mean_s + 0.01, 1])
+			mean_init = np.array([s_mean_estimate, 1])
 			sd_init = np.multiply(mean_init, np.array([2, 2.5]))
 
 			result = BinfC.CRS2_LM(nlopt_function, lower_boundaries, upper_boundaries, 
@@ -891,7 +891,7 @@ if __name__ == '__main__':
 			lower_boundaries = [0, min_mean_s, 0.1]
 
 			distribution_init = np.array(["u", "lu", "lu"])
-			mean_init = np.array([5e-9, (min_mean_s + 0.01), 1])
+			mean_init = np.array([5e-9, s_mean_estimate, 1])
 			sd_init = np.multiply(mean_init, np.array([2, 2, 2.5]))
 
 			result = BinfC.CRS2_LM(nlopt_function, lower_boundaries, upper_boundaries, 

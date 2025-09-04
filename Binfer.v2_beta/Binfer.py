@@ -179,6 +179,8 @@ if __name__ == '__main__':
 	import likelihood as BinfL
 	import CRS2 as BinfC
 
+	pi_mm, pi_m = BinfL.SFS_to_pi(np.sum(SFS_array, axis=0), genomes)
+	pi_Ne = (pi_mm / pi_m) / (4 * mu)
 
 	print("[+] Reading genome file...", flush=True)
 
@@ -314,7 +316,7 @@ if __name__ == '__main__':
 	nlopt_function = partial(BinfL.optimisation_1N, mu = mu, observed_SFS = BinfL.SFS_to_pi(np.sum(SFS_array, axis=0), genomes), 
 		verbose = True, mode = "pi", genomes = genomes)
 	opt.set_max_objective(nlopt_function)
-	xopt = opt.optimize([10_000])
+	xopt = opt.optimize([pi_Ne])
 	T1 = time.time()
 	print("[=] Ne: {}".format(xopt[0]), flush=True)
 	print("[=] Loglikelihood: {}".format(opt.last_optimum_value()), flush=True)
@@ -685,7 +687,8 @@ if __name__ == '__main__':
 		print("[+]---------------------------------------------------------")
 
 		distribution_init = np.array(["e", "e"])
-		mean_init = np.array([0.01, 2])
+		mean_init = np.array([max(0.01, (min_mean_s * 1.1)) / 2, 2])
+		#print(mean_init)
 		sd_init = np.array([1, 1]) # 1 is just a placeholder for exp and uniform distributions
 
 		upper_boundaries = [0.2, 10]
@@ -753,7 +756,7 @@ if __name__ == '__main__':
 		
 
 		distribution_init = np.array(["u", "e", "e"])
-		mean_init = np.array([1e-8, 0.01, 2])
+		mean_init = np.array([1e-8, max(0.01, (min_mean_s * 1.1)) / 2, 2])
 		sd_init = np.array([1, 1, 1]) # 1 is just a placeholder for exp and uniform distributions
 
 		while m_tracker <= m_thresh:

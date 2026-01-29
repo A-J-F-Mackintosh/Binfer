@@ -13,11 +13,9 @@ git clone https://github.com/A-J-F-Mackintosh/Binfer.git
 
 ### Usage
 
-The input for fitting BGS models is unfolded windowed site frequency spectra. The script `Binfer_prep.py` can be used to generate this from a clean VCF and a bed file of callable sites.
-
 #### Preparing data
 
-The python script `Binfer_prep.py` can be used to prepare data for fitting BGS model.
+The input for fitting BGS models is unfolded windowed site frequency spectra. The script `Binfer_prep.py` can be used to generate this from a clean VCF and a bed file of callable sites.
 
 ```
 
@@ -84,7 +82,7 @@ Usage: Binfer.py -s <STR> -b <STR> -g <STR> -r <STR> -p <INT> -n <INT> -w <INT> 
 
 Where an example command would look like:
 
-`./Binfer.v1/Binfer.py -s grandiflora_full_array.txt -b corientalis_grandiflora.CDS.bed -g genomefile.txt -r rmap_files.txt -p 2 -n 10 -w 10_000 -m 7e-9 -a -q 2`
+`./Binfer/Binfer.v2_beta/Binfer.py -s taxon_1_full_array.txt -b CDS.bed -g taxon_1.genomefile -r rmap_files.txt -p 2 -n 10 -w 10000 -m 1e-8 -y 0.0 -q 2 -e 2 -u`
 
 The one non-standard file type in the input is `rmap_files.txt`. This is text file with a list of file names, each corresponding to a recombination map. For example:
 
@@ -115,5 +113,3 @@ In Hapmap format:
 20000    0.8
 30000    0
 ```
-
-

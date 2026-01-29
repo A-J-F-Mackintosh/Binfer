@@ -23,9 +23,6 @@ Usage: Binfer_prep.py -v <STR> -b <STR> -g <STR> -d <INT> -D <INT> -w <INT> (-1 
 
 import sys
 from docopt import docopt
-import tskit
-import pyslim
-import msprime
 import numpy as np
 import math
 import random

@@ -277,7 +277,7 @@ if __name__ == '__main__':
 				for line in r_file:
 					if line[0].isdigit():
 						phys, rec = line.split("\t")[0:2]
-						end = (float(phys) * 1e6) + so_far
+						end = float(phys) + so_far
 						rec = float(rec) * 1e-8
 						r_map.append((start, end, rec * (end - start)))
 						start = end

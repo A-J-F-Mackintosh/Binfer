@@ -319,11 +319,11 @@ if __name__ == '__main__':
 									ancestral_allele = "0"
 									derived_allele = str(list(set(alleles_taxon_1) ^ set(["0"]))[0])
 								else:
-									if len(alt_base).split(",") == 1:
+									if len(alt_base.split(",")) == 1:
 										derived_allele = "0"
 										ancestral_allele = str(list(set(alleles_taxon_1) ^ set(["0"]))[0])
 									else:
-										for i, base in enumerate(len(alt_base).split(",")):
+										for i, base in enumerate(alt_base.split(",")):
 											if base == ancestral_base:
 												ancestral_allele = str(i)
 												derived_allele = str(list(set(alleles_taxon_1) ^ set([str(i)]))[0])
@@ -411,7 +411,7 @@ if __name__ == '__main__':
 
 								for allele_idx_i in range(len(all_alleles)):
 									for allele_idx_j in range(allele_idx_i+1, len(all_alleles)):
-										if allele_idx_i in alleles_taxon_1 and allele_idx_j in alleles_taxon_1:
+										if str(allele_idx_i) in alleles_taxon_1 and str(allele_idx_j) in alleles_taxon_1:
 											ancestral_allele = str(allele_idx_i)
 											derived_allele = str(allele_idx_j)
 
@@ -474,8 +474,8 @@ if __name__ == '__main__':
 
 	if fold == 1:
 		half = downsample_1 // 2 # downsample_1 should always be even
-    taxon_1_array[:, 1:half] += taxon_1_array[:, half+1:][:, ::-1]
-    taxon_1_array[:, half+1:] = 0
+		taxon_1_array[:, 1:half] += taxon_1_array[:, half+1:][:, ::-1]
+		taxon_1_array[:, half+1:] = 0
 
 	taxon_1_sfs = np.sum(taxon_1_array, axis=0)
 	if UAA == 0 and fold == 0:

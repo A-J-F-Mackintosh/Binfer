@@ -54,8 +54,14 @@ def polarisation_error(sfs, eps, init):
 		new_sfs[n-i+init] = high_i
 	return new_sfs
 
+def fold_sfs(sfs):
+	folded_sfs = sfs.copy()
+	half = len(folded_sfs) // 2
+	folded_sfs[1:half] += folded_sfs[half+1:][::-1]
+	folded_sfs[half+1:] = 0
+	return folded_sfs
 
-def optimisation_theta(params, grad, observed_SFS, other_params, genomes, epochs, alpha, mask_hf):
+def optimisation_theta(params, grad, observed_SFS, other_params, genomes, epochs, alpha, mask_hf, fold):
 	
 	theta = params[0]
 	theta = 10**theta
@@ -124,7 +130,11 @@ def optimisation_theta(params, grad, observed_SFS, other_params, genomes, epochs
 		observed_SFS_copy[0] += observed_SFS_copy[-2]
 		observed_SFS_copy = observed_SFS_copy[0:genomes-2]
 
-	log_expected_SFS = np.log(sfs) # this will create a warning if there is a zero in there
+	if fold:
+		log_expected_SFS = np.log(fold_sfs(sfs))
+	else:
+		log_expected_SFS = np.log(sfs)
+
 	temp_likelihoods = np.multiply(log_expected_SFS, observed_SFS_copy) # this will lead to -inf*0 -> nan, or -inf*[>0] -> -inf, nan is fine!
 	loglikelihood = np.sum(np.where(np.isnan(temp_likelihoods), 0, temp_likelihoods)) # change nan to zero
 
@@ -168,7 +178,7 @@ def optimisation_1N(params, grad, mu, observed_SFS, verbose, mode, genomes):
 	return loglikelihood
 
 
-def optimisation_multi_epoch(params, grad, mu, observed_SFS, verbose, genomes, epochs, alpha, mask_hf, eps):
+def optimisation_multi_epoch(params, grad, mu, observed_SFS, verbose, genomes, epochs, alpha, mask_hf, eps, fold):
 
 	# normalise
 	if mask_hf:
@@ -279,7 +289,11 @@ def optimisation_multi_epoch(params, grad, mu, observed_SFS, verbose, genomes, e
 		
 		#print(expected_SFS, "\n")
 
-		log_expected_SFS = np.log(expected_SFS) # this will create a warning if there is a zero in there
+		if fold:
+			log_expected_SFS = np.log(fold_sfs(expected_SFS)) # this will create a warning if there is a zero in there
+		else:
+			log_expected_SFS = np.log(expected_SFS)
+
 		temp_likelihoods = np.multiply(log_expected_SFS, n_observed_SFS) # this will lead to -inf*0 -> nan, or -inf*[>0] -> -inf, nan is fine!
 		loglikelihood = np.sum(np.where(np.isnan(temp_likelihoods), 0, temp_likelihoods)) # change nan to zero
 
@@ -287,7 +301,7 @@ def optimisation_multi_epoch(params, grad, mu, observed_SFS, verbose, genomes, e
 
 
 def optimisation_1N_classicBGS(params, grad, mu, observed_SFS_windows, verbose, 
-	r_distance_array, exon_array, r_array, mode, ploidy, genomes, observed_Ne, round_B, alpha, window_size, return_B_map):
+	r_distance_array, exon_array, r_array, mode, ploidy, genomes, observed_Ne, round_B, alpha, window_size, return_B_map, fold):
 
 	if len(params) == 3:
 		Ne0 = None
@@ -315,7 +329,7 @@ def optimisation_1N_classicBGS(params, grad, mu, observed_SFS_windows, verbose,
 		u = params[1]
 		s_mean = params[2]
 		s_shape = params[3]
-		h = params[5]
+		h = params[4]
 
 	loglikelihood = 0
 
@@ -326,7 +340,7 @@ def optimisation_1N_classicBGS(params, grad, mu, observed_SFS_windows, verbose,
 
 	min_s = 3 / (observed_Ne * 2) / (h*(1 - F) + F)
 
-	B_array = BinfB.get_B_map(s_shape, s_mean, u, alpha, h, min_s, r_distance_array, r_array, exon_array, window_size)
+	B_array = BinfB.get_B_map(s_shape, s_mean, u, alpha, h, min_s, r_distance_array, r_array, exon_array, window_size, fold)
 
 	if B_array is None:
 		print(params, "B-map calculation failed", flush=True)
@@ -366,7 +380,10 @@ def optimisation_1N_classicBGS(params, grad, mu, observed_SFS_windows, verbose,
 					except:
 						return float("-inf")
 
-				log_expected_SFS = np.log(expected_SFS) # this will create a warning if there is a zero in there
+				if fold:
+					log_expected_SFS = np.log(fold_sfs(expected_SFS)) # this will create a warning if there is a zero in there
+				else:
+					log_expected_SFS = np.log(expected_SFS)
 				temp_likelihoods = np.multiply(log_expected_SFS, window_SFS) # this will lead to -inf*0 -> nan, or -inf*[>0] -> -inf, nan is fine!
 				loglikelihood += np.sum(np.where(np.isnan(temp_likelihoods), 0, temp_likelihoods)) # change nan to zero
 
@@ -411,7 +428,7 @@ def optimisation_1N_classicBGS(params, grad, mu, observed_SFS_windows, verbose,
 
 def optimisation_2N_classicBGS(params, grad, mu, observed_SFS_windows, verbose, 
 	r_distance_array, exon_array, r_array, mode, ploidy, genomes, observed_Ne, maximize, precision, alpha, 
-	mask_hf, eps, window_size):
+	mask_hf, eps, window_size, fold):
 
 	if alpha:
 		sys.exit("not implemented")
@@ -643,7 +660,10 @@ def optimisation_2N_classicBGS(params, grad, mu, observed_SFS_windows, verbose,
 				window_SFS_copy = window_SFS_copy[0:genomes-2]
 
 
-			log_expected_SFS = np.log(expected_SFS) # this will create a warning if there is a zero in there
+			if fold:
+				log_expected_SFS = np.log(fold_sfs(expected_SFS)) # this will create a warning if there is a zero in there
+			else:
+				log_expected_SFS = np.log(expected_SFS)
 			temp_likelihoods = np.multiply(log_expected_SFS, window_SFS_copy) # this will lead to -inf*0 -> nan, or -inf*[>0] -> -inf, nan is fine!
 			loglikelihood += np.sum(np.where(np.isnan(temp_likelihoods), 0, temp_likelihoods)) # change nan to zero
 
@@ -663,7 +683,7 @@ def optimisation_2N_classicBGS(params, grad, mu, observed_SFS_windows, verbose,
 
 def optimisation_3N_classicBGS(params, grad, mu, observed_SFS_windows, verbose, 
 	r_distance_array, exon_array, r_array, mode, ploidy, genomes, observed_Ne, maximize, precision, alpha, 
-	mask_hf, eps, window_size):
+	mask_hf, eps, window_size, fold):
 
 	if alpha:
 		sys.exit("not implemented")
@@ -933,7 +953,10 @@ def optimisation_3N_classicBGS(params, grad, mu, observed_SFS_windows, verbose,
 				window_SFS_copy = window_SFS_copy[0:genomes-2]
 
 
-			log_expected_SFS = np.log(expected_SFS) # this will create a warning if there is a zero in there
+			if fold:
+				log_expected_SFS = np.log(fold_sfs(expected_SFS)) # this will create a warning if there is a zero in there
+			else:
+				log_expected_SFS = np.log(expected_SFS)
 			temp_likelihoods = np.multiply(log_expected_SFS, window_SFS_copy) # this will lead to -inf*0 -> nan, or -inf*[>0] -> -inf, nan is fine!
 			loglikelihood += np.sum(np.where(np.isnan(temp_likelihoods), 0, temp_likelihoods)) # change nan to zero
 
@@ -1040,7 +1063,7 @@ def do_calc_selfing(sfs_chunk):
 
 def optimisation_3N_classicBGS_mp(params, grad, mu, observed_SFS_windows, verbose, 
 	r_distance_array, exon_array, r_array, mode, ploidy, genomes, observed_Ne, maximize, precision, alpha, 
-	mask_hf, eps, processes, time_test, window_size, return_B_map):
+	mask_hf, eps, processes, time_test, window_size, return_B_map, fold):
 
 	if alpha:
 		sys.exit("not implemented")
@@ -1203,7 +1226,10 @@ def optimisation_3N_classicBGS_mp(params, grad, mu, observed_SFS_windows, verbos
 				mm = SFS_to_pi(expected_SFS[0:genomes], genomes)[0]
 				predicted_Bmap_array[result["idx"]] = mm / (overall_Nmax * mu * 4)
 
-			log_expected_SFS = np.log(expected_SFS) # this will create a warning if there is a zero in there
+			if fold:
+				log_expected_SFS = np.log(fold_sfs(expected_SFS)) # this will create a warning if there is a zero in there
+			else:
+				log_expected_SFS = np.log(expected_SFS)
 			temp_likelihoods = np.multiply(log_expected_SFS, window_SFS_copy) # this will lead to -inf*0 -> nan, or -inf*[>0] -> -inf, nan is fine!
 			loglikelihood += np.sum(np.where(np.isnan(temp_likelihoods), 0, temp_likelihoods)) # change nan to zero
 
@@ -1226,7 +1252,7 @@ def optimisation_3N_classicBGS_mp(params, grad, mu, observed_SFS_windows, verbos
 
 def optimisation_2N_classicBGS_mp(params, grad, mu, observed_SFS_windows, verbose, 
 	r_distance_array, exon_array, r_array, mode, ploidy, genomes, observed_Ne, maximize, precision, alpha, 
-	mask_hf, eps, processes, time_test, window_size, return_B_map):
+	mask_hf, eps, processes, time_test, window_size, return_B_map, fold):
 
 	if alpha:
 		sys.exit("not implemented")
@@ -1369,7 +1395,10 @@ def optimisation_2N_classicBGS_mp(params, grad, mu, observed_SFS_windows, verbos
 				mm = SFS_to_pi(expected_SFS[0:genomes], genomes)[0]
 				predicted_Bmap_array[result["idx"]] = mm / (overall_Nmax * mu * 4)
 
-			log_expected_SFS = np.log(expected_SFS) # this will create a warning if there is a zero in there
+			if fold:
+				log_expected_SFS = np.log(fold_sfs(expected_SFS)) # this will create a warning if there is a zero in there
+			else:
+				log_expected_SFS = np.log(expected_SFS)
 			temp_likelihoods = np.multiply(log_expected_SFS, window_SFS_copy) # this will lead to -inf*0 -> nan, or -inf*[>0] -> -inf, nan is fine!
 			loglikelihood += np.sum(np.where(np.isnan(temp_likelihoods), 0, temp_likelihoods)) # change nan to zero
 
@@ -1420,7 +1449,7 @@ def optimise_Ne0_1N_selfing(params, grad, ND_step_1, ND_step_2, mu, diploids, al
 
 def optimisation_1N_classicBGS_selfing(params, grad, mu, observed_SFS_windows, verbose, 
 	r_distance_array, exon_array, r_array, mode, ploidy, genomes, observed_Ne, maximize, precision, alpha, 
-	mask_hf, eps, window_size, return_B_map):
+	mask_hf, eps, window_size, return_B_map, fold):
 
 	if alpha is None:
 		sys.exit("not implemented")
@@ -1549,7 +1578,10 @@ def optimisation_1N_classicBGS_selfing(params, grad, mu, observed_SFS_windows, v
 					window_SFS_copy[0] += window_SFS_copy[-2]
 					window_SFS_copy = window_SFS_copy[0:genomes-2]
 
-				log_expected_SFS = np.log(expected_SFS) # this will create a warning if there is a zero in there
+				if fold:
+					log_expected_SFS = np.log(fold_sfs(expected_SFS)) # this will create a warning if there is a zero in there
+				else:
+					log_expected_SFS = np.log(expected_SFS)
 				temp_likelihoods = np.multiply(log_expected_SFS, window_SFS_copy) # this will lead to -inf*0 -> nan, or -inf*[>0] -> -inf, nan is fine!
 				loglikelihood += np.sum(np.where(np.isnan(temp_likelihoods), 0, temp_likelihoods)) # change nan to zero
 

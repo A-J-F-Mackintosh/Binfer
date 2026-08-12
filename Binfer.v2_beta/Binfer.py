@@ -3,7 +3,7 @@
 
 """
 
-Usage: Binfer.py -s <STR> -b <STR> -g <STR> -r <STR> -p <INT> -n <INT> -w <INT> -m <FLT> -e <INT> [-h -f -u -a -y <FLT> -q <INT> -Z <FLT> -P <STR> -F <FLT> -H]
+Usage: Binfer.py -s <STR> -b <STR> -g <STR> -r <STR> -p <INT> -n <INT> -w <INT> -m <FLT> -e <INT> [-h -f -u -a -y <FLT> -q <INT> -Z <FLT> -P <STR> -F <FLT> -H -V]
 
   [Options]
     -s, --sfs <STR>                            SFS file
@@ -24,6 +24,7 @@ Usage: Binfer.py -s <STR> -b <STR> -g <STR> -r <STR> -p <INT> -n <INT> -w <INT> 
     -P, --prefix <STR>                         A prefix for writing files (default is Binfer)
     -F, --Fis <FLT>                            Use this value of Fis to calculate the selfing rate (alpha), rather than estimating alpha from the SFS
     -H, --Hapmap                               Recombination maps are in Hapmap format
+    -V, --folded                               The data is folded
     -h, --help                                 Show this message
 
 """
@@ -305,7 +306,11 @@ if __name__ == '__main__':
 
 	# for r in r_map:
 	# 	print(r)
-	
+
+	if args["--folded"]:
+		fold_param = True
+	else:
+		fold_param = False
 
 	print("[+] Optimising 1N pi model...", flush=True)
 	T0 = time.time()
@@ -338,7 +343,7 @@ if __name__ == '__main__':
 			opt.set_upper_bounds([math.log10(100), math.log10(100), math.log10(0.9999)])
 			opt.set_lower_bounds([math.log10(0.01), math.log10(0.01), math.log10(0.0001)])
 			nlopt_function = partial(BinfL.optimisation_multi_epoch, mu = mu, observed_SFS = np.sum(SFS_array, axis=0), 
-				verbose = True, genomes = genomes, epochs = 2, alpha = alpha, mask_hf = mask_hf, eps = f_eps)
+				verbose = True, genomes = genomes, epochs = 2, alpha = alpha, mask_hf = mask_hf, eps = f_eps, fold = fold_param)
 			opt.set_max_objective(nlopt_function)
 			xopt = opt.optimize([0, 0, math.log10(0.5)])
 			N_ratio, step_ratio, alpha = xopt
@@ -351,7 +356,7 @@ if __name__ == '__main__':
 			opt.set_lower_bounds([math.log10(1e-7)])
 			nlopt_function = partial(BinfL.optimisation_theta, observed_SFS = np.sum(SFS_array, axis=0), 
 				other_params = [N_ratio, step_ratio, f_eps], genomes = genomes, epochs = 2, alpha = alpha, 
-				mask_hf = mask_hf)
+				mask_hf = mask_hf, fold = fold_param)
 			opt.set_max_objective(nlopt_function)
 			xopt = opt.optimize([math.log10(0.01)])
 			theta_2N = xopt[0]
@@ -434,7 +439,7 @@ if __name__ == '__main__':
 				opt.set_upper_bounds([math.log10(25), math.log10(25), math.log10(0.5), math.log10(0.9999)])
 				opt.set_lower_bounds([math.log10(0.04), math.log10(0.04), math.log10(0.0001), math.log10(0.0001)])
 				nlopt_function = partial(BinfL.optimisation_multi_epoch, mu = mu, observed_SFS = np.sum(SFS_array, axis=0), 
-					verbose = True, genomes = genomes, epochs = 2, alpha = alpha, mask_hf = mask_hf, eps = f_eps)
+					verbose = True, genomes = genomes, epochs = 2, alpha = alpha, mask_hf = mask_hf, eps = f_eps, fold = fold_param)
 				opt.set_max_objective(nlopt_function)
 				xopt = opt.optimize([0, 0, math.log10(0.01), math.log10(0.5)])
 				N_ratio, step_ratio, eps, alpha = xopt
@@ -445,7 +450,7 @@ if __name__ == '__main__':
 				opt.set_upper_bounds([math.log10(25.01), math.log10(25.01), math.log10(0.501), math.log10(0.999901)])
 				opt.set_lower_bounds([math.log10(0.0399), math.log10(0.0399), math.log10(0.000099), math.log10(0.000099)])
 				nlopt_function = partial(BinfL.optimisation_multi_epoch, mu = mu, observed_SFS = np.sum(SFS_array, axis=0), 
-					verbose = True, genomes = genomes, epochs = 2, alpha = alpha, mask_hf = mask_hf, eps = f_eps)
+					verbose = True, genomes = genomes, epochs = 2, alpha = alpha, mask_hf = mask_hf, eps = f_eps, fold = fold_param)
 				opt.set_max_objective(nlopt_function)
 				xopt = opt.optimize([N_ratio, step_ratio, eps, alpha])
 				N_ratio, step_ratio, eps, alpha = xopt
@@ -462,7 +467,7 @@ if __name__ == '__main__':
 			opt.set_lower_bounds([math.log10(1e-7)])
 			nlopt_function = partial(BinfL.optimisation_theta, observed_SFS = np.sum(SFS_array, axis=0), 
 				other_params = [N_ratio_est, step_ratio_est, eps_est, alpha_est], genomes = genomes, epochs = 2, alpha = alpha, 
-				mask_hf = mask_hf)
+				mask_hf = mask_hf, fold = fold_param)
 			opt.set_max_objective(nlopt_function)
 			xopt = opt.optimize([math.log10(0.01)])
 			theta_2N = xopt[0]
@@ -552,7 +557,7 @@ if __name__ == '__main__':
 			opt.set_upper_bounds([math.log10(25), math.log10(25), math.log10(0.5)])
 			opt.set_lower_bounds([math.log10(0.04), math.log10(0.04), math.log10(0.0001)])
 			nlopt_function = partial(BinfL.optimisation_multi_epoch, mu = mu, observed_SFS = np.sum(SFS_array, axis=0), 
-				verbose = True, genomes = genomes, epochs = 2, alpha = None, mask_hf = mask_hf, eps = f_eps)
+				verbose = True, genomes = genomes, epochs = 2, alpha = None, mask_hf = mask_hf, eps = f_eps, fold = fold_param)
 			opt.set_max_objective(nlopt_function)
 			xopt = opt.optimize([0, 0, math.log10(0.01)])
 			N_ratio, step_ratio, eps = xopt
@@ -563,7 +568,7 @@ if __name__ == '__main__':
 			opt.set_lower_bounds([math.log10(1e-7)])
 			nlopt_function = partial(BinfL.optimisation_theta, observed_SFS = np.sum(SFS_array, axis=0), 
 				other_params = [N_ratio, step_ratio, eps], genomes = genomes, epochs = 2, alpha = None, 
-				mask_hf = mask_hf)
+				mask_hf = mask_hf, fold = fold_param)
 			opt.set_max_objective(nlopt_function)
 			xopt = opt.optimize([math.log10(0.01)])
 			theta_2N = xopt[0]
@@ -595,7 +600,7 @@ if __name__ == '__main__':
 				opt.set_upper_bounds([math.log10(10), math.log10(10), math.log10(10), math.log10(10), math.log10(0.01) + math.log10(5)])
 				opt.set_lower_bounds([math.log10(0.1), math.log10(0.1), math.log10(0.1), math.log10(0.1), math.log10(0.01) - math.log10(5)])
 				nlopt_function = partial(BinfL.optimisation_multi_epoch, mu = mu, observed_SFS = np.sum(SFS_array, axis=0), 
-					verbose = True, genomes = genomes, epochs = 3, alpha = None, mask_hf = mask_hf, eps = f_eps)
+					verbose = True, genomes = genomes, epochs = 3, alpha = None, mask_hf = mask_hf, eps = f_eps, fold = fold_param)
 				opt.set_max_objective(nlopt_function)
 				xopt = opt.optimize([0, 0, 0, 0, math.log10(0.01)])
 				N0_ratio, N1_ratio, step0_ratio, step1_ratio, eps = xopt
@@ -606,7 +611,7 @@ if __name__ == '__main__':
 				opt.set_upper_bounds([math.log10(25), math.log10(25), math.log10(25), math.log10(25), math.log10(10**eps*10)])
 				opt.set_lower_bounds([math.log10(0.04), math.log10(0.04), math.log10(0.04), math.log10(0.04), math.log10(10**eps/10)])
 				nlopt_function = partial(BinfL.optimisation_multi_epoch, mu = mu, observed_SFS = np.sum(SFS_array, axis=0), 
-					verbose = True, genomes = genomes, epochs = 3, alpha = None, mask_hf = mask_hf, eps = f_eps)
+					verbose = True, genomes = genomes, epochs = 3, alpha = None, mask_hf = mask_hf, eps = f_eps, fold = fold_param)
 				opt.set_max_objective(nlopt_function)
 				xopt = opt.optimize([N0_ratio, N1_ratio, step0_ratio, step1_ratio, eps])
 				N0_ratio, N1_ratio, step0_ratio, step1_ratio, eps = xopt
@@ -623,7 +628,7 @@ if __name__ == '__main__':
 			opt.set_lower_bounds([math.log10(1e-7)])
 			nlopt_function = partial(BinfL.optimisation_theta, observed_SFS = np.sum(SFS_array, axis=0), 
 				other_params = [N0_ratio_est, N1_ratio_est, step0_ratio_est, step1_ratio_est, eps_est], 
-				genomes = genomes, epochs = 3, alpha = None, mask_hf = mask_hf)
+				genomes = genomes, epochs = 3, alpha = None, mask_hf = mask_hf, fold = fold_param)
 			opt.set_max_objective(nlopt_function)
 			xopt = opt.optimize([math.log10(0.01)])
 			theta_2N = xopt[0]
@@ -667,7 +672,7 @@ if __name__ == '__main__':
 	nlopt_function = partial(BinfL.optimisation_1N_classicBGS, grad = None, mu = mu, observed_SFS_windows = SFS_array, 
 		verbose = True, r_distance_array = r_distance_array, exon_array = exon_array, r_array = r_array, 
 		mode = "pi", ploidy = ploidy, genomes = genomes, observed_Ne = single_Ne_estimate, 
-		round_B = False, alpha = None, window_size = window_size, return_B_map = False)
+		round_B = False, alpha = None, window_size = window_size, return_B_map = False, fold = fold_param)
 
 	if args["--prefix"]:
 		prefix = str(args["--prefix"])
@@ -704,7 +709,7 @@ if __name__ == '__main__':
 			nlopt_function = partial(BinfL.optimisation_1N_classicBGS, mu = mu, observed_SFS_windows = SFS_array, 
 				verbose = True, r_distance_array = r_distance_array, exon_array = exon_array, r_array = r_array, 
 				mode = "pi", ploidy = ploidy, genomes = genomes, observed_Ne = single_Ne_estimate, round_B = False, 
-				alpha = None, window_size = window_size, return_B_map = False)
+				alpha = None, window_size = window_size, return_B_map = False, fold = fold_param)
 
 			opt = nlopt.opt(nlopt.LN_NELDERMEAD, 2)
 			opt.set_maxeval(125)
@@ -746,7 +751,7 @@ if __name__ == '__main__':
 			nlopt_function = partial(BinfL.optimisation_1N_classicBGS, grad = None, mu = mu, observed_SFS_windows = SFS_array, 
 				verbose = True, r_distance_array = r_distance_array, exon_array = exon_array, r_array = r_array, 
 				mode = "pi", ploidy = ploidy, genomes = genomes, observed_Ne = single_Ne_estimate, 
-				round_B = False, alpha = None, window_size = window_size, return_B_map = False)
+				round_B = False, alpha = None, window_size = window_size, return_B_map = False, fold = fold_param)
 
 
 	else:
@@ -769,7 +774,7 @@ if __name__ == '__main__':
 			nlopt_function = partial(BinfL.optimisation_1N_classicBGS, mu = mu, observed_SFS_windows = SFS_array, 
 				verbose = True, r_distance_array = r_distance_array, exon_array = exon_array, r_array = r_array, 
 				mode = "pi", ploidy = ploidy, genomes = genomes, observed_Ne = single_Ne_estimate, round_B = False, 
-				alpha = None, window_size = window_size, return_B_map = False)
+				alpha = None, window_size = window_size, return_B_map = False, fold = fold_param)
 
 			opt = nlopt.opt(nlopt.LN_NELDERMEAD, 3)
 			opt.set_maxeval(200)
@@ -788,7 +793,7 @@ if __name__ == '__main__':
 			B_map = BinfL.optimisation_1N_classicBGS(params = [u_estimate, s_mean_estimate, s_shape_estimate], 
 				grad = None, mu = mu, observed_SFS_windows = SFS_array, verbose = True, r_distance_array = r_distance_array, 
 				exon_array = exon_array, r_array = r_array, mode = "pi", ploidy = ploidy, genomes = genomes, 
-				observed_Ne = single_Ne_estimate, round_B = False, alpha = None, window_size = window_size, return_B_map = True)
+				observed_Ne = single_Ne_estimate, round_B = False, alpha = None, window_size = window_size, return_B_map = True, fold = fold_param)
 
 			if m_tracker == 0:
 				np.savetxt(prefix + ".1N_classic_BGS.B_map.txt", B_map, delimiter=',')
@@ -811,7 +816,7 @@ if __name__ == '__main__':
 			nlopt_function = partial(BinfL.optimisation_1N_classicBGS, grad = None, mu = mu, observed_SFS_windows = SFS_array, 
 				verbose = True, r_distance_array = r_distance_array, exon_array = exon_array, r_array = r_array, 
 				mode = "pi", ploidy = ploidy, genomes = genomes, observed_Ne = single_Ne_estimate, 
-				round_B = False, alpha = None, window_size = window_size, return_B_map = False)
+				round_B = False, alpha = None, window_size = window_size, return_B_map = False, fold = fold_param)
 
 
 	if args["--selfing"] and ploidy == 2:
@@ -830,12 +835,12 @@ if __name__ == '__main__':
 		nlopt_function = partial(BinfL.optimisation_1N_classicBGS_selfing, grad=None, mu = mu, observed_SFS_windows = SFS_array, 
 				verbose = True, r_distance_array = r_distance_array, exon_array = exon_array, r_array = r_array, 
 				mode = "pi", ploidy = ploidy, genomes = genomes, observed_Ne = single_Ne_estimate, maximize = True, precision = 2, 
-				alpha = alpha_estimate, mask_hf = mask_hf, eps = f_eps, window_size = window_size, return_B_map = False)
+				alpha = alpha_estimate, mask_hf = mask_hf, eps = f_eps, window_size = window_size, return_B_map = False, fold = fold_param)
 
 		minimize_function = partial(BinfL.optimisation_1N_classicBGS_selfing, grad=None, mu = mu, observed_SFS_windows = SFS_array, 
 				verbose = True, r_distance_array = r_distance_array, exon_array = exon_array, r_array = r_array, 
 				mode = "pi", ploidy = ploidy, genomes = genomes, observed_Ne = single_Ne_estimate, maximize = False, precision = 2, 
-				alpha = alpha_estimate, mask_hf = mask_hf, eps = f_eps, window_size = window_size, return_B_map = False)
+				alpha = alpha_estimate, mask_hf = mask_hf, eps = f_eps, window_size = window_size, return_B_map = False, fold = fold_param)
 
 		if args["--fixu"]: # this option fixes the deleterious mutation rate and gives a big speed up
 
@@ -877,7 +882,8 @@ if __name__ == '__main__':
 				params = [s_mean_estimate, s_shape_estimate], mu = mu, 
 				observed_SFS_windows = SFS_array, verbose = True, r_distance_array = r_distance_array, exon_array = exon_array, 
 				r_array = r_array, mode = "pi", ploidy = ploidy, genomes = genomes, observed_Ne = single_Ne_estimate, maximize = True, 
-				precision = 2, alpha = alpha_estimate, mask_hf = mask_hf, eps = f_eps, window_size = window_size, return_B_map = True)
+				precision = 2, alpha = alpha_estimate, mask_hf = mask_hf, eps = f_eps, 
+				window_size = window_size, return_B_map = True, fold = fold_param)
 
 		else:
 
@@ -919,7 +925,8 @@ if __name__ == '__main__':
 				params = [u_estimate, s_mean_estimate, s_shape_estimate], mu = mu, 
 				observed_SFS_windows = SFS_array, verbose = True, r_distance_array = r_distance_array, exon_array = exon_array, 
 				r_array = r_array, mode = "pi", ploidy = ploidy, genomes = genomes, observed_Ne = single_Ne_estimate, maximize = True, 
-				precision = 2, alpha = alpha_estimate, mask_hf = mask_hf, eps = f_eps, window_size = window_size, return_B_map = True)
+				precision = 2, alpha = alpha_estimate, mask_hf = mask_hf, eps = f_eps, 
+				window_size = window_size, return_B_map = True, fold = fold_param)
 
 		np.savetxt(prefix + ".1N_BGS_selfing.B_map.txt", predicted_Bmap_array, delimiter=',')
 
@@ -942,13 +949,13 @@ if __name__ == '__main__':
 			nlopt_function = partial(BinfL.optimisation_2N_classicBGS, grad=None, mu = mu, observed_SFS_windows = SFS_array, 
 				verbose = True, r_distance_array = r_distance_array, exon_array = exon_array, r_array = r_array, 
 				mode = "SFS", ploidy = ploidy, genomes = genomes, observed_Ne = single_Ne_estimate, 
-				maximize = True, precision = 0, alpha = None, mask_hf = mask_hf, eps = eps, window_size = window_size)
+				maximize = True, precision = 0, alpha = None, mask_hf = mask_hf, eps = eps, window_size = window_size, fold = fold_param)
 
 			minimize_function = partial(BinfL.optimisation_2N_classicBGS_mp, grad=None, mu = mu, observed_SFS_windows = SFS_array, 
 				verbose = True, r_distance_array = r_distance_array, exon_array = exon_array, r_array = r_array, 
 				mode = "SFS", ploidy = ploidy, genomes = genomes, observed_Ne = single_Ne_estimate, 
 				maximize = False, precision = 2, alpha = None, mask_hf = mask_hf, eps = eps, processes = processes, 
-				time_test = False, window_size = window_size, return_B_map = False)
+				time_test = False, window_size = window_size, return_B_map = False, fold = fold_param)
 
 			#approx_B = single_Ne_estimate / Ne_estimate_BGS
 			prior_Ne0 = Ne0_estimate * 1.2
@@ -990,7 +997,7 @@ if __name__ == '__main__':
 					mu = mu, observed_SFS_windows = SFS_array, verbose = True, r_distance_array = r_distance_array, exon_array = exon_array, 
 					r_array = r_array, mode = "SFS", ploidy = ploidy, genomes = genomes, observed_Ne = single_Ne_estimate, maximize = False, 
 					precision = 2, alpha = None, mask_hf = mask_hf, eps = eps, processes = processes, time_test = False, 
-					window_size = window_size, return_B_map = True)
+					window_size = window_size, return_B_map = True, fold = fold_param)
 
 			else:
 
@@ -1025,7 +1032,7 @@ if __name__ == '__main__':
 					mu = mu, observed_SFS_windows = SFS_array, verbose = True, r_distance_array = r_distance_array, exon_array = exon_array, 
 					r_array = r_array, mode = "SFS", ploidy = ploidy, genomes = genomes, observed_Ne = single_Ne_estimate, maximize = False, 
 					precision = 2, alpha = None, mask_hf = mask_hf, eps = eps, processes = processes, time_test = False, 
-					window_size = window_size, return_B_map = True)
+					window_size = window_size, return_B_map = True, fold = fold_param)
 
 			predicted_SFS = np.sum(predicted_SFS_array, axis=0)
 
@@ -1050,13 +1057,13 @@ if __name__ == '__main__':
 			nlopt_function = partial(BinfL.optimisation_3N_classicBGS, grad=None, mu = mu, observed_SFS_windows = SFS_array, 
 				verbose = True, r_distance_array = r_distance_array, exon_array = exon_array, r_array = r_array, 
 				mode = "SFS", ploidy = ploidy, genomes = genomes, observed_Ne = single_Ne_estimate, 
-				maximize = True, precision = 0, alpha = None, mask_hf = mask_hf, eps = eps, window_size = window_size)
+				maximize = True, precision = 0, alpha = None, mask_hf = mask_hf, eps = eps, window_size = window_size, fold = fold_param)
 
 			minimize_function = partial(BinfL.optimisation_3N_classicBGS_mp, grad=None, mu = mu, observed_SFS_windows = SFS_array, 
 				verbose = True, r_distance_array = r_distance_array, exon_array = exon_array, r_array = r_array, 
 				mode = "SFS", ploidy = ploidy, genomes = genomes, observed_Ne = single_Ne_estimate, 
 				maximize = False, precision = 2, alpha = None, mask_hf = mask_hf, eps = eps, processes = processes, 
-				time_test = False, window_size = window_size, return_B_map = False)
+				time_test = False, window_size = window_size, return_B_map = False, fold = fold_param)
 
 			#approx_B = single_Ne_estimate / Ne_estimate_BGS
 			prior_Ne0 = Ne0_estimate * 1.2
@@ -1102,7 +1109,7 @@ if __name__ == '__main__':
 					mu = mu, observed_SFS_windows = SFS_array, verbose = True, r_distance_array = r_distance_array, exon_array = exon_array, 
 					r_array = r_array, mode = "SFS", ploidy = ploidy, genomes = genomes, observed_Ne = single_Ne_estimate, maximize = False, 
 					precision = 2, alpha = None, mask_hf = mask_hf, eps = 0, processes = processes, time_test = False, 
-					window_size = window_size, return_B_map = True)
+					window_size = window_size, return_B_map = True, fold = fold_param)
 
 			else:
 
@@ -1140,7 +1147,7 @@ if __name__ == '__main__':
 					mu = mu, observed_SFS_windows = SFS_array, verbose = True, r_distance_array = r_distance_array, exon_array = exon_array, 
 					r_array = r_array, mode = "SFS", ploidy = ploidy, genomes = genomes, observed_Ne = single_Ne_estimate, maximize = False, 
 					precision = 2, alpha = None, mask_hf = mask_hf, eps = eps, processes = processes, time_test = False, 
-					window_size = window_size, return_B_map = True)
+					window_size = window_size, return_B_map = True, fold = fold_param)
 
 
 			predicted_SFS = np.sum(predicted_SFS_array, axis=0)

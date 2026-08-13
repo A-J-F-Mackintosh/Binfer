@@ -54,6 +54,13 @@ def polarisation_error(sfs, eps, init):
 		new_sfs[n-i+init] = high_i
 	return new_sfs
 
+def fold_sfs_shape(sfs):
+	folded_sfs = sfs.copy()
+	half = (len(folded_sfs) + 1) // 2
+	folded_sfs[0:half-1] += folded_sfs[half:][::-1]
+	folded_sfs[half:] = 0
+	return folded_sfs
+
 def fold_sfs(sfs):
 	folded_sfs = sfs.copy()
 	half = len(folded_sfs) // 2
@@ -290,7 +297,7 @@ def optimisation_multi_epoch(params, grad, mu, observed_SFS, verbose, genomes, e
 		#print(expected_SFS, "\n")
 
 		if fold:
-			log_expected_SFS = np.log(fold_sfs(expected_SFS)) # this will create a warning if there is a zero in there
+			log_expected_SFS = np.log(fold_sfs_shape(expected_SFS)) # this will create a warning if there is a zero in there
 		else:
 			log_expected_SFS = np.log(expected_SFS)
 
